@@ -19,6 +19,7 @@ contract Token is IERC20, ContractLogic {
 
     struct Holder {
         address addr;
+        uint256 reclaimableAmount; //Amount (in euros) the holder is owed
         TokenPartition[] tokenPartitions;
     }
 
@@ -64,7 +65,35 @@ contract Token is IERC20, ContractLogic {
         return false;
     }
 
-    /*
+    function addToWhitelist(address account)
+    {
+        whitelist[account] = true;
+        return 0;
+    }
+
+
+    function removeFromWhitelist(address account)
+    {
+        whitelist[account] = false;
+        terminateContract(account);
+    }
+
+    //Burn tokens owned by blacklisted holders. Track their reclaimable amount.
+    function terminateContract(address account)
+    {
+        uint256 tempReclaimableAmount;
+
+        for (uint i = 0; i < holders[holderIdx[account]].tokenPartitions.length; i++)
+            {
+                tempReclaimableAmount += holders[holderIdx[account]].tokenPartitions[i].amount;
+            }
+
+        holders[holderIdx[account]].reclaimableAmount = tempReclaimableAmount;
+        _burn(account, tempReclaimableAmount);
+
+        return 0;
+     }
+
     event dividendsPaid();
     address public stableCoinAddress;
     function payDividends() external onlyOwner {
@@ -73,6 +102,6 @@ contract Token is IERC20, ContractLogic {
                 IERC20(stableCoinAddress).transfer(holders[i], balanceOf(holders[i]).mul(104).div(100));
         }
         emit dividendsPaid();
+
     }
-    */
 }
