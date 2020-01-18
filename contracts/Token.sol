@@ -2,8 +2,9 @@ pragma solidity ^0.5.14;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "./Upgradeable.sol";
 
-contract Token is IERC20 {
+contract Token is IERC20, ContractLogic {
     using SafeMath for uint256;
 
     string public symbol;
