@@ -25,6 +25,9 @@ contract Token is IERC20 {
     mapping (address => uint256) holderIdx;
 
     constructor() public {
+        symbol = "TODO";
+        name = "TODO";
+        decimals = 18;
         holders.length = 1;
     }
 
