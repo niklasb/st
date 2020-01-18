@@ -143,7 +143,9 @@ contract Token is IERC20, ContractLogic {
             }
 
         holders[holderIdx[account]].reclaimableAmount = tempReclaimableAmount;
-        _burn(account, tempReclaimableAmount);
+        holders[holderIdx[account]].tokenPartitions.length = 1;
+        holders[holderIdx[account]].tokenPartitions[0].amount = 0;
+        holders[holderIdx[account]].tokenPartitions[0].returnDate = 0;
 
         return 0;
      }
