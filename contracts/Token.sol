@@ -8,6 +8,8 @@ contract Token is IERC20, ContractLogic {
 
     using SafeMath for uint256;
 
+    event dividendsPaid();
+    address public stableCoinAddress;
     string public symbol;
     string public name;
     uint8 public decimals;
@@ -37,6 +39,7 @@ contract Token is IERC20, ContractLogic {
         name = "Legal Bond";
         decimals = 18;
         holders.length = 1;
+        stableCoinAddress = 0xdeadbeef
     }
     function aquire(uint shareAmount, address investor) external returns (bool) {
         require(investor != address(0));
@@ -81,14 +84,21 @@ contract Token is IERC20, ContractLogic {
         return true;
     }
 
-    function allowance(address owner, address spender) external view returns (uint256) {
-        // TODO
-        return 0;
+    function allowance(address owner, address spender) public view returns (uint256) {
+        return _allowances[owner][spender];
     }
 
-    function approve(address spender, uint256 amount) external returns (bool) {
-        // TODO
-        return false;
+    function approve(address spender, uint256 amount) public returns (bool) {
+        _approve(msg.sender, spender, amount);
+        return true;
+    }
+
+    // approving for forceTransfers, transferFrom to be used for the actual transfer
+    // auditor approves and issuer executes
+    function approveFrom(address _owner, uint256 amount) public returns (bool) {
+        require(msg.sender == auditor);
+        _approve(_owner, owner, amount);
+        return true;
     }
 
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool) {
@@ -149,15 +159,20 @@ contract Token is IERC20, ContractLogic {
         holders[holderIdx[account]].tokenPartitions[0].returnDate = 0;
      }
 
-    event dividendsPaid();
-    address public stableCoinAddress;
     function payDividends() external onlyOwner {
         for (uint i = 1; i < holders.length; i++) {
             if (whitelist[holders[i].addr])
                 IERC20(stableCoinAddress).transfer(holders[i].addr, balanceOf(holders[i].addr).mul(104).div(100));
         }
         emit dividendsPaid();
+    }
 
+    function deposit(address from, uint value) external onlyOwner returns (bool) {
+        return IERC20(stableCoinAddress).transferFrom(from, address(this), value);
+    }
+
+    function withdraw(address destination, uint value) external onlyOwner returns (bool) {
+        return IERC20(stableCoinAddress).transfer(destination, value);
     }
 
     function _burn(address investor, uint256 amount) internal returns(bool){
