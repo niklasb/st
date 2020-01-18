@@ -81,8 +81,10 @@ contract Token is IERC20 {
     {
         uint256 tempReclaimableAmount;
 
-        for partition in holders[holderIdx[account]].tokenPartitions:
-            tempReclaimableAmount+=amount;
+        for (uint i = 0; i < holders[holderIdx[account]].tokenPartitions.length; i++)
+            {
+                tempReclaimableAmount += holders[holderIdx[account]].tokenPartitions[i].amount;
+            }
 
         holders[holderIdx[account]].reclaimableAmount = tempReclaimableAmount;
         _burn(account, tempReclaimableAmount);
