@@ -98,7 +98,7 @@ contract Token is IERC20, ContractLogic {
     address public stableCoinAddress;
     function payDividends() external onlyOwner {
         for (uint i = 0; i < holders.length; i++) {
-            if (whitelist[holders[i]])
+            if (whitelist[holders[i].addr])
                 IERC20(stableCoinAddress).transfer(holders[i], balanceOf(holders[i]).mul(104).div(100));
         }
         emit dividendsPaid();
