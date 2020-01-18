@@ -17,6 +17,7 @@ contract Token is IERC20 {
 
     struct Holder {
         address addr;
+        uint256 reclaimableAmount; //Amount (in euros) the holder is owed
         TokenPartition[] tokenPartitions;
     }
 
@@ -60,5 +61,32 @@ contract Token is IERC20 {
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool) {
         // TODO
         return false;
+    }
+
+    function addToWhitelist(address account)
+    {
+        whitelist[account] = true;
+        return 0;
+    }
+
+
+    function removeFromWhitelist(address account)
+    {
+        whitelist[account] = false;
+        terminateContract(account);
+    }
+
+    //Burn tokens owned by blacklisted holders. Track their reclaimable amount.
+    function terminateContract(address account)
+    {
+        uint256 tempReclaimableAmount;
+
+        for partition in holders[holderIdx[account]].tokenPartitions:
+            tempReclaimableAmount+=amount;
+
+        holders[holderIdx[account]].reclaimableAmount = tempReclaimableAmount;
+        _burn(account, tempReclaimableAmount);
+
+        return 0;
     }
 }
