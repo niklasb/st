@@ -2,10 +2,9 @@ pragma solidity ^0.5.14;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "./Upgradeable.sol";
 
-contract Token is IERC20, Ownable, ContractLogic {
+contract Token is IERC20, ContractLogic {
 
     using SafeMath for uint256;
 
@@ -28,9 +27,9 @@ contract Token is IERC20, Ownable, ContractLogic {
     mapping (address => bool) whitelist;
     mapping (address => uint256) holderIdx;
 
-    constructor() public {
-        symbol = "TODO";
-        name = "TODO";
+    function construct() public onlyOwner {
+        symbol = "BOND";
+        name = "Legal Bond";
         decimals = 18;
         holders.length = 1;
     }
@@ -65,6 +64,7 @@ contract Token is IERC20, Ownable, ContractLogic {
         return false;
     }
 
+    /*
     event dividendsPaid();
     address public stableCoinAddress;
     function payDividends() external onlyOwner {
@@ -74,4 +74,5 @@ contract Token is IERC20, Ownable, ContractLogic {
         }
         emit dividendsPaid();
     }
+    */
 }

@@ -1,0 +1,9 @@
+const Token = artifacts.require('Token');
+
+contract('Token', ([a, b, c]) => {
+  let token;
+
+  beforeEach('setup', async () => {
+    logic = await Token.new();
+  });
+})
