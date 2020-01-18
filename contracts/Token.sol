@@ -25,6 +25,7 @@ contract Token is IERC20, Ownable, ContractLogic {
 
     Holder[] holders;
 
+    mapping (address => bool) whitelist;
     mapping (address => uint256) holderIdx;
 
     constructor() public {
