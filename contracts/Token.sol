@@ -48,7 +48,7 @@ contract Token is IERC20, ContractLogic {
         require(investor != address(0));
         require(whitelist[msg.sender], "investor not whitelisted");
         //Not handlig pre-purchases yet
-        require(shareAmount <= 1000 ether, "less than minimum amount");
+        require(shareAmount >= 1000 ether, "less than minimum amount");
         // Edge cases possible if remaning available amount is less than 1000)
         if (_totalSupply.add(shareAmount) <= maximumSupply){
             shareAmount = maximumSupply.sub(_totalSupply);
