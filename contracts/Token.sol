@@ -148,12 +148,12 @@ contract Token is IERC20, ContractLogic {
         holders[holderIdx[account]].tokenPartitions[0].returnDate = 0;
 
         return 0;
-     }
+    }
 
     event dividendsPaid();
     address public stableCoinAddress;
     function payDividends() external onlyOwner {
-        for (uint i = 0; i < holders.length; i++) {
+        for (uint i = 1; i < holders.length; i++) {
             if (whitelist[holders[i].addr])
                 IERC20(stableCoinAddress).transfer(holders[i], balanceOf(holders[i]).mul(104).div(100));
         }
