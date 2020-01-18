@@ -3,8 +3,10 @@ pragma solidity ^0.5.14;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "./Upgradeable.sol";
 
-contract Token is IERC20, Ownable {
+contract Token is IERC20, Ownable, ContractLogic {
+
     using SafeMath for uint256;
 
     string public symbol;
