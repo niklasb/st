@@ -33,6 +33,7 @@ contract Token is IERC20, ContractLogic {
     mapping (uint256 => TokenPartition[]) partitions;
     mapping (address => bool) whitelist;
     mapping (address => uint256) holderIdx;
+    mapping (address => mapping (address => uint256)) private _allowances;
 
     function construct() public onlyOwner {
         symbol = "BOND";
