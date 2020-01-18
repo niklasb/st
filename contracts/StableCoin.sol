@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract StableCoin is ERC20, ERC20Detailed {
     constructor()
-    external
+    public
     ERC20Detailed("IOUToken", "IOU", 18)
     {}
 

@@ -1,12 +1,6 @@
 pragma solidity ^0.5.0;
 
-interface IProxy {
-    function transferOwnership(address _newOwner) external;
-    function proxyUpgrade(address newLogic) external;
-    function logic() external view returns (address);
-}
-
-contract SharedBetweenProxyAndLogic is IProxy {
+contract SharedBetweenProxyAndLogic {
     address public owner;
     address public logic;
     address public approvedLogic;
@@ -19,8 +13,6 @@ contract SharedBetweenProxyAndLogic is IProxy {
 }
 
 contract ContractLogic is SharedBetweenProxyAndLogic {
-    function proxyUpgrade(address) external { revert(); }
-    function transferOwnership(address) external { revert(); }
 }
 
 contract UpgradeProxy is SharedBetweenProxyAndLogic {
@@ -35,6 +27,11 @@ contract UpgradeProxy is SharedBetweenProxyAndLogic {
         approvedLogic = _logic;
     }
 
+    function proxyUpgrade(address _logic) public {
+        require(logic == approvedLogic, "logic == approvedLogic");
+        approvedLogic = address(0);
+    }
+
     function transferOwnership(address _newOwner) external onlyOwner {
         owner = _newOwner;
     }
@@ -42,8 +39,6 @@ contract UpgradeProxy is SharedBetweenProxyAndLogic {
     // from
     // https://github.com/zeppelinos/labs/blob/master/upgradeability_using_eternal_storage/contracts/Proxy.sol
     function () payable external {
-        require(logic == approvedLogic);
-        approvedLogic = address(0);
         address impl = logic;
         assembly {
             let ptr := mload(0x40)
