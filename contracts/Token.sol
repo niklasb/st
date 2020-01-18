@@ -11,8 +11,9 @@ contract Token is IERC20, ContractLogic {
     string public symbol;
     string public name;
     uint8 public decimals;
-    uint256 public totalSupply;
-    uint256 public const maximumSupply = 50000000 ether;
+    uint256 public _totalSupply;
+    uint256 public constant maximumSupply = 50000000 ether;
+
 
     struct TokenPartition {
         uint256 amount;
@@ -22,11 +23,12 @@ contract Token is IERC20, ContractLogic {
     struct Holder {
         address addr;
         uint256 reclaimableAmount; //Amount (in euros) the holder is owed
-        TokenPartition[] tokenPartitions;
+        uint256 tokenPartitionIndex;
     }
 
     Holder[] holders;
 
+    mapping (uint256 => TokenPartition[]) partitions;
     mapping (address => bool) whitelist;
     mapping (address => uint256) holderIdx;
 
@@ -36,44 +38,45 @@ contract Token is IERC20, ContractLogic {
         decimals = 18;
         holders.length = 1;
     }
-
-    function aquire(uint shareAmount, address investor) external returns (uint256 shareAmount) {
+    function aquire(uint shareAmount, address investor) external returns (bool) {
         require(investor != address(0));
-        require(whitelisted[msg.sender], "investor not whitelisted");
+        require(whitelist[msg.sender], "investor not whitelisted");
         //Not handlig pre-purchases yet
         require(shareAmount <= 1000 ether, "less than minimum amount");
         // Edge cases possible if remaning available amount is less than 1000)
-        if (totalSupply.add(shareAmount) <= maximumSupply)){
-            shareAmount = maximumSupply.sub(totalSupply);
+        if (_totalSupply.add(shareAmount) <= maximumSupply){
+            shareAmount = maximumSupply.sub(_totalSupply);
         }
-        require(stabletoken.transferFrom(investor, shareAmount), "token transfer failed");
+        require(IERC20(stableCoinAddress).transferFrom(investor, address(this), shareAmount), "token transfer failed");
 
-        if(holderIdx[investor] == address(0)){
-            holders.push({investor,[{0, 0}, {shareAmount, now.div(1 days).add(14 days)}]);
+        if(holders[holderIdx[investor]].addr == address(0)){
+            holderIdx[investor] = holders.length;
+            Holder memory hldr = Holder(investor, shareAmount, holderIdx[investor]);            
+            holders.push(hldr);
         } else {
-            Holder storage hodl = holderIdx[address];
-            hodl.tokenPartitions.push({shareAmount, now.div(1 days).add(14 days)});
+            Holder storage hodl = holders[holderIdx[investor]];
+            partitions[hodl.tokenPartitionIndex].push(TokenPartition(shareAmount, uint64(now.div(1 days).add(14 days))));
         }
-        require(holders.length <= 200, "Maximum investors reached")
+        require(holders.length <= 200, "Maximum investors reached");
 
-        transferFrom(owner, investor, shareAmount);
+        
+        return true;
     }
 
     function totalSupply() external view returns (uint256) {
-        return totalSupply;
+        return _totalSupply;
     }
 
-    function balanceOf(address account) external view returns (uint256 bal) {
-        uint bal = 0;
-        TokenPartition[] memory partitions = holders[holderIdx[msg.sender]].tokenPartitions
+    function balanceOf(address account) public view returns (uint256 bal) {
+        TokenPartition[] memory parts = partitions[holderIdx[msg.sender]];
         //we might reach the gas limit
-        for(uint i= 0; i < partitions.length; i++){
-            bal += partitions[i].amount;
+        for(uint i= 0; i < parts.length; i++){
+            bal += parts[i].amount;
         }
     }
 
     function transfer(address recipient, uint256 amount) external returns (bool) {
-        require(whitelisted[recipient]);
+        require(whitelist[recipient]);
         _transfer(msg.sender, recipient, amount);
         return true;
     }
@@ -93,71 +96,71 @@ contract Token is IERC20, ContractLogic {
         return true;
     }
 
-    function _transfer(address _from, address _to, uint256 0) internal {
-        TokenPartition[] memory partitions = holders[holderIdx[msg.sender]].tokenPartitions
-        if(partitions[0].amount >= amount) {
-            partitions[0] = partitions[0].amount.sub(amount);
-            holders[holderIdx[recipient]].tokenPartitions[0].amount = holders[holderIdx[recipient]].tokenPartitions[0].amount.add(amount) 
+    function _transfer(address sender, address recipient, uint256 amount) internal {
+        TokenPartition[] storage _partitions = partitions[holderIdx[msg.sender]];
+        if(_partitions[0].amount >= amount) {
+            _partitions[0].amount = _partitions[0].amount.sub(amount);
+            partitions[holderIdx[recipient]][0].amount = partitions[holderIdx[recipient]][0].amount.add(amount);
         } else {
             uint256 availableAmount = 0;
-            for(uint i= 1; i < partitions.length; i++){
-                if(partitions[i].returnDate <= now){
-                    if(availableAmount += partitions[i].amount >= amount){
+            for(uint i= 1; i < _partitions.length; i++){
+                if(_partitions[i].returnDate <= now){
+                    if(availableAmount + _partitions[i].amount >= amount){
                         uint256 remaning = amount.sub(availableAmount);
-                        partitions[i].amount = partitions[i].amount.sub(remaning)
+                        _partitions[i].amount = _partitions[i].amount.sub(remaning);
                         break;  
                     } else {
-                        partitions[i].amount = 0;
-                        availableAmount += partitions[i].amount
+                        _partitions[i].amount = 0;
+                        availableAmount += _partitions[i].amount;
                     }
                 } else {
                     revert();
                 }
             }
-            holders[holderIdx[recipient]].tokenPartitions[0].amount = holders[holderIdx[recipient]].tokenPartitions[0].amount.add(amount);
-            holders[holderIdx[msg.sender]].tokenPartitions = partitions;//expensive operation 
+            partitions[holderIdx[recipient]][0].amount = partitions[holderIdx[recipient]][0].amount.add(amount);
         }
     }
 
-    function addToWhitelist(address account)
+    function addToWhitelist(address account) public
     {
         whitelist[account] = true;
-        return 0;
     }
 
 
-    function removeFromWhitelist(address account)
+    function removeFromWhitelist(address account) public
     {
         whitelist[account] = false;
         terminateContract(account);
     }
 
     //Burn tokens owned by blacklisted holders. Track their reclaimable amount.
-    function terminateContract(address account)
+    function terminateContract(address account) public
     {
         uint256 tempReclaimableAmount;
 
-        for (uint i = 0; i < holders[holderIdx[account]].tokenPartitions.length; i++)
+        for (uint i = 0; i < partitions[holderIdx[account]].length; i++)
             {
-                tempReclaimableAmount += holders[holderIdx[account]].tokenPartitions[i].amount;
+                tempReclaimableAmount += partitions[holderIdx[account]][i].amount;
             }
 
         holders[holderIdx[account]].reclaimableAmount = tempReclaimableAmount;
         holders[holderIdx[account]].tokenPartitions.length = 1;
         holders[holderIdx[account]].tokenPartitions[0].amount = 0;
         holders[holderIdx[account]].tokenPartitions[0].returnDate = 0;
-
-        return 0;
-    }
+     }
 
     event dividendsPaid();
     address public stableCoinAddress;
     function payDividends() external onlyOwner {
         for (uint i = 1; i < holders.length; i++) {
             if (whitelist[holders[i].addr])
-                IERC20(stableCoinAddress).transfer(holders[i], balanceOf(holders[i]).mul(104).div(100));
+                IERC20(stableCoinAddress).transfer(holders[i].addr, balanceOf(holders[i].addr).mul(104).div(100));
         }
         emit dividendsPaid();
 
+    }
+
+    function _burn(address investor, uint256 amount) internal returns(bool){
+        return true;
     }
 }
