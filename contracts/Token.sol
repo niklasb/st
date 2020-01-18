@@ -9,6 +9,8 @@ contract Token is IERC20, ContractLogic {
     using SafeMath for uint256;
 
     event dividendsPaid();
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Transfer(address indexed from, address indexed to, uint256 value);
     address public stableCoinAddress;
     string public symbol;
     string public name;
@@ -40,7 +42,7 @@ contract Token is IERC20, ContractLogic {
         name = "Legal Bond";
         decimals = 18;
         holders.length = 1;
-        stableCoinAddress = 0xdeadbeef
+        stableCoinAddress = 0x230E277B1A6B36d56Da0F143Fe73ABdA7a926dbb;
     }
     function aquire(uint shareAmount, address investor) external returns (bool) {
         require(investor != address(0));
@@ -102,6 +104,14 @@ contract Token is IERC20, ContractLogic {
         return true;
     }
 
+    function _approve(address owner, address spender, uint256 amount) internal {
+        require(owner != address(0), "ERC20: approve from the zero address");
+        require(spender != address(0), "ERC20: approve to the zero address");
+
+        _allowances[owner][spender] = amount;
+        emit Approval(owner, spender, amount);
+    }
+
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool) {
         _transfer(sender, recipient, amount);
         return true;
@@ -155,9 +165,9 @@ contract Token is IERC20, ContractLogic {
             }
 
         holders[holderIdx[account]].reclaimableAmount = tempReclaimableAmount;
-        holders[holderIdx[account]].tokenPartitions.length = 1;
-        holders[holderIdx[account]].tokenPartitions[0].amount = 0;
-        holders[holderIdx[account]].tokenPartitions[0].returnDate = 0;
+        partitions[holderIdx[account]].length = 1;
+        partitions[holderIdx[account]][0].amount = 0;
+        partitions[holderIdx[account]][0].returnDate = 0;
      }
 
     function payDividends() external onlyOwner {
