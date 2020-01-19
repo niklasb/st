@@ -57,7 +57,7 @@ contract Token is IERC20, ContractLogic {
 
         if(holders[holderIdx[investor]].addr == address(0)){
             holderIdx[investor] = holders.length;
-            Holder memory hldr = Holder(investor, shareAmount, holderIdx[investor]);            
+            Holder memory hldr = Holder(investor, shareAmount, holderIdx[investor]);
             holders.push(hldr);
         } else {
             Holder storage hodl = holders[holderIdx[investor]];
